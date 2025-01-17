@@ -1,57 +1,33 @@
-# importing required classes
-# importing required classes
+# Importing required libraries
 from pypdf import PdfReader
 import fitz  # PyMuPDF
 import nltk
 from nltk.tokenize import word_tokenize
+import re
 
-# Ensure you download the required data for tokenization
+# Ensure you download the required NLTK data
 nltk.download('punkt')
 
-# Load the PDF
-reader = PdfReader('20L-1207_Case Studie.pdf')
+# Load the PDF using PyMuPDF
+pdf_document = '20L-1207_Case Studie.pdf'
+doc = fitz.open(pdf_document)
 
-# Printing the number of pages in the PDF file
-print("Number of pages:", len(reader.pages))
+# Extract text from the first page using fitz
+page = doc[0]
+text = page.get_text()
 
-# Creating a page object (first page in this case)
-page = reader.pages[0]
-
-# Extracting text from the page
-text = page.extract_text()
 if text:
     print("Text successfully extracted from the page.")
 
-    # Tokenizing the extracted text
-    tokens = word_tokenize(text)
+    # Preprocessing: Add spaces between concatenated words (heuristic)
+    cleaned_text = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", text)
+
+    # Tokenize the preprocessed text
+    tokens = word_tokenize(cleaned_text)
     print("Tokens:", tokens)
 else:
     print("No text extracted from the page. Please check the PDF.")
-# importing required classes
-from pypdf import PdfReader
-import fitz  # PyMuPDF
-import nltk
-from nltk.tokenize import word_tokenize
 
-# Ensure you download the required data for tokenization
-nltk.download('punkt')
+# Close the PDF document
+doc.close()
 
-# Load the PDF
-reader = PdfReader('20L-1207_Case Studie.pdf')
-
-# Printing the number of pages in the PDF file
-print("Number of pages:", len(reader.pages))
-
-# Creating a page object (first page in this case)
-page = reader.pages[0]
-
-# Extracting text from the page
-text = page.extract_text()
-if text:
-    print("Text successfully extracted from the page.")
-
-    # Tokenizing the extracted text
-    tokens = word_tokenize(text)
-    print("Tokens:", tokens)
-else:
-    print("No text extracted from the page. Please check the PDF.")
