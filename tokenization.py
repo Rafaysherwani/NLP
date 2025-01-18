@@ -2,7 +2,7 @@
 from pypdf import PdfReader
 import fitz  # PyMuPDF
 import nltk
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import word_tokenize, sent_tokenize
 import re
 
 # Ensure you download the required NLTK data
@@ -22,12 +22,17 @@ if text:
     # Preprocessing: Add spaces between concatenated words (heuristic)
     cleaned_text = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", text)
 
-    # Tokenize the preprocessed text
-    tokens = word_tokenize(cleaned_text)
-    print("Tokens:", tokens)
+    # Tokenize the text into sentences
+    sentences = sent_tokenize(cleaned_text)
+
+    # Tokenize each sentence into words
+    tokenized_sentences = [word_tokenize(sentence) for sentence in sentences]
+
+    # Print results
+    for i, sentence_tokens in enumerate(tokenized_sentences, 1):
+        print(f"Sentence {i} Tokens: {sentence_tokens}")
 else:
     print("No text extracted from the page. Please check the PDF.")
 
 # Close the PDF document
 doc.close()
-
