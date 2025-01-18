@@ -20,31 +20,29 @@ text = page.get_text()
 if text:
     print("Text successfully extracted from the page.")
 
-    # Tokenize the text into sentences
-    sentences = nltk.sent_tokenize(text)
+    # Tokenize the text
+    tokens = word_tokenize(text)
 
-    # Define a grammar for sentence-level chunking
+    # Perform POS tagging
+    pos_tags = pos_tag(tokens)
+    print("POS Tags:", pos_tags)
+
+    # Define a grammar for chunking (example: noun phrases)
     grammar = r"""
-        SENTENCE: {<DT>?<JJ>*<NN.*>+<VB.*><DT>?<JJ>*<NN.*>+}  # Sentence: Noun Phrase + Verb + Noun Phrase
+        NP: {<DT>?<JJ>*<NN.*>+}   # Noun Phrase: Optional determiner, adjectives, and nouns
+        VP: {<VB.*><NP|PP>*}      # Verb Phrase: Verb followed by noun phrase or prepositional phrase
     """
 
-    # Create a chunk parser for sentences
+    # Create a chunk parser
     chunk_parser = RegexpParser(grammar)
 
+    # Perform chunking
+    tree = chunk_parser.parse(pos_tags)
+
+    # Display the chunks
     print("Chunks:")
-    for sentence in sentences:
-        # Tokenize the sentence
-        tokens = word_tokenize(sentence)
-
-        # Perform POS tagging
-        pos_tags = pos_tag(tokens)
-
-        # Perform chunking at the sentence level
-        tree = chunk_parser.parse(pos_tags)
-
-        # Display the chunks
-        for subtree in tree.subtrees(filter=lambda t: t.label() == "SENTENCE"):
-            print(subtree)
+    for subtree in tree.subtrees(filter=lambda t: t.label() in ["NP", "VP"]):
+        print(subtree)
 
 else:
     print("No text extracted from the page. Please check the PDF.")
