@@ -1,4 +1,3 @@
-
 import fitz  # PyMuPDF
 import nltk
 from nltk.tokenize import word_tokenize
