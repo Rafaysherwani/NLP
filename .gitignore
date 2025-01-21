@@ -2,3 +2,4 @@
 __pycache__/lemmentization.cpython-313.pyc
 __pycache__/api.cpython-313.pyc
 __pycache__/chunking.cpython-313.pyc
+api.py
