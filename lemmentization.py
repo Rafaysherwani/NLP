@@ -1,3 +1,4 @@
+from fastapi import FastAPI, File, UploadFile, HTTPException
 import fitz  # PyMuPDF
 import nltk
 from nltk.tokenize import word_tokenize
@@ -5,12 +6,21 @@ from nltk import pos_tag
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 import re
+import os
 
-# Ensure you download the required NLTK data
+# Ensure NLTK resources are downloaded
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
+
+# Initialize FastAPI app
+app = FastAPI()
+
+# Add a root GET endpoint
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Lemmatization API!"}
 
 # Function to map POS tags to WordNet-compatible POS tags
 def get_wordnet_pos(treebank_tag):
@@ -25,23 +35,23 @@ def get_wordnet_pos(treebank_tag):
     else:
         return None
 
-# Load the PDF using fitz
-pdf_document = '20L-1207_Case Studie.pdf'
-doc = fitz.open(pdf_document)
+# Define the text pre-processing function
+def process_document(file_path: str):
+    # Open the PDF using fitz
+    doc = fitz.open(file_path)
 
-# Extract text from the first page
-page = doc[0]
-text = page.get_text()
+    # Extract text from the first page
+    page = doc[0]
+    text = page.get_text()
 
-if text:
-    print("Text successfully extracted from the page.")
+    if not text:
+        raise ValueError("No text found in the uploaded document.")
 
     # Preprocessing: Add spaces between concatenated words (basic heuristic)
     text_preprocessed = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", text)
 
     # Tokenize the preprocessed text
     tokens = word_tokenize(text_preprocessed)
-    print("Tokens:", tokens)
 
     # Perform POS tagging
     pos_tags = pos_tag(tokens)
@@ -52,17 +62,36 @@ if text:
     # Lemmatize tokens using POS tags and convert to lowercase
     lemmatized_tokens = []
     for word, tag in pos_tags:
-        wordnet_pos = get_wordnet_pos(tag) or wordnet.NOUN  # Default to NOUN if no match
-        lemmatized_word = lemmatizer.lemmatize(word.lower(), pos=wordnet_pos)  # Lowercase before lemmatizing
-        lemmatized_tokens.append(lemmatized_word)
+        wordnet_pos = get_wordnet_pos(tag) or wordnet.NOUN
+        lemmatized_tokens.append(lemmatizer.lemmatize(word.lower(), pos=wordnet_pos))
 
-        # Debugging: Display the mapping process (optional)
-        print(f"Original: {word}, POS Tag: {tag}, Mapped POS: {wordnet_pos}, Lemmatized: {lemmatized_word}")
+    # Close the document
+    doc.close()
 
-    print("\nLemmatized Tokens:", lemmatized_tokens)
+    return {
+        "tokens": tokens,
+        "lemmatized_tokens": lemmatized_tokens
+    }
 
-else:
-    print("No text extracted from the page. Please check the PDF.")
+# FastAPI route to upload and process the document
+@app.post("/upload/")
+async def upload_file(file: UploadFile = File(...)):
+    if not file.filename.endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported.")
+    
+    # Save the uploaded file temporarily
+    file_location = f"temp_{file.filename}"
+    with open(file_location, "wb") as f:
+        f.write(await file.read())
 
-# Close the document
-doc.close()
+    try:
+        # Process the uploaded document
+        result = process_document(file_location)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(file_location):
+            os.remove(file_location)
+
+    return result
